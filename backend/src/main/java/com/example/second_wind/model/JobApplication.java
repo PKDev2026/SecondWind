@@ -2,6 +2,9 @@ package com.example.second_wind.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.dialect.type.PostgreSQLEnumJdbcType;
+
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 
@@ -28,6 +31,8 @@ public class JobApplication {
     private String salaryRange;
 
     @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
+    @Column(name = "status", columnDefinition = "application_status")
     private ApplicationStatus status;
 
     @Column(name = "current_stage")

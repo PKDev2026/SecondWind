@@ -11,7 +11,11 @@ export const api = {
   },
 
   // Create a new application
-  createApplication: async (jobApplication: JobApplication, companyName: string, companyDomain: string) => {
+  createApplication: async (
+    jobApplication: Omit<JobApplication, 'id' | 'company' | 'createdAt' | 'updatedAt'>, 
+    companyName: string, 
+    companyDomain: string
+  ): Promise<JobApplication> => {
     const res = await fetch(`${BASE_URL}/applications`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

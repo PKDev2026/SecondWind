@@ -11,7 +11,7 @@ public class ApplicationTimeline {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private Long id;
+    private Integer id;
 
     @ManyToOne
     @JoinColumn(name = "job_application_id", nullable = false)

@@ -12,7 +12,7 @@ public class JobApplication {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private Long id;
+    private Integer id;
 
     @ManyToOne
     @JoinColumn(name = "company_id", nullable = false)

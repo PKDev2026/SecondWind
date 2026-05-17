@@ -45,7 +45,3 @@ public class JobApplication {
     @Column(name = "updated_at")
     private ZonedDateTime updatedAt;
 }
-
-enum ApplicationStatus {
-    APPLIED, INTERVIEW, REJECTED, GHOSTED
-}

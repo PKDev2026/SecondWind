@@ -36,3 +36,10 @@ export interface ResumeVersion {
   skillsAligned?: string;
   createdAt: string;
 }
+
+export interface AnalysisResult {
+  matchScore: number;
+  keywordsMatched: string[];
+  keywordsMissing: string[];
+  recommendations: string[];
+}

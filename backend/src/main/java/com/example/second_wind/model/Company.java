@@ -1,5 +1,6 @@
 package com.example.second_wind.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.ZonedDateTime;
@@ -24,5 +25,6 @@ public class Company {
     private ZonedDateTime createdAt;
 
     @OneToMany(mappedBy = "company", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties("company")
     private List<JobApplication> applications;
 }

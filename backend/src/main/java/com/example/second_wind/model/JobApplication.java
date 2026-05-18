@@ -3,8 +3,8 @@ package com.example.second_wind.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.JdbcType;
-import org.hibernate.dialect.type.PostgreSQLEnumJdbcType;
-
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
+import org.hibernate.annotations.JdbcType;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 

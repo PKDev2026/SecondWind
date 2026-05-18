@@ -9,5 +9,4 @@ public class SecondWindApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(SecondWindApplication.class, args);
 	}
-
 }

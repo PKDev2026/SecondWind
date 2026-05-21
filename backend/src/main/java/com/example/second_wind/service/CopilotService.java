@@ -1,63 +1,108 @@
 package com.example.second_wind.service;
 
 import com.example.second_wind.model.dto.AnalysisResponse;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.converter.BeanOutputConverter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.http.MediaType;
 
+import java.util.ArrayList;
 import java.util.Map;
+import java.util.List;
 
 @Service
 public class CopilotService {
 
-    private final ChatClient chatClient;
+    private final RestClient restClient;
 
-    // Spring AI automatically configures a ChatClient.Builder based on your properties
-    public CopilotService(ChatClient.Builder chatClientBuilder) {
-        this.chatClient = chatClientBuilder.build();
+    public CopilotService() {
+        this.restClient = RestClient.builder()
+                .baseUrl("https://generativelanguage.googleapis.com")
+                .build();
     }
 
-    public AnalysisResponse analyzeJobDescription(String jobDescription) {
-        // 1. Create a structural converter bound directly to your DTO record
-        BeanOutputConverter<AnalysisResponse> converter = new BeanOutputConverter<>(AnalysisResponse.class);
+    public AnalysisResponse analyzeJobDescription(String jobDescription, String resumeText) {
+        String apiKey = System.getenv("GEMINI_API_KEY");
 
-        // 2. Draft the strategic instructions for the model
-        String promptText = """
-            You are an expert technical interview coach and senior software architect.
-            Analyze the following target job description against the candidate's core profile.
-            
-            Candidate Core Profile:
-            - Core Languages & Tech: Java 25, Spring Boot, PostgreSQL, React, TypeScript, Angular
-            - Professional Level: Mid-Level Software Engineer (approx. 6 years experience)
-            - Strengths: Backend systems architecture, API design, full-stack application development, data tier normalization.
-            
-            Target Job Description:
-            {jobDescription}
-            
-            Instructions:
-            - Calculate an honest, realistic matchScore (0-100%) based on structural stack alignment.
-            - Extract keywordsMatched: Technical skills explicitly listed in the description that match the candidate profile.
-            - Extract keywordsMissing: Crucial tools, architectures, cloud vendors, or frameworks requested in the job description that are NOT in the candidate profile.
-            - Provide actionable recommendations: Strategic advice or technical focus areas to prepare before an interview for this role.
-            
-            {formatInstructions}
-            """;
+        String promptText = "You are an expert technical career assistant and resume analyzer.\n\n" +
+                "INSTRUCTIONS:\n" +
+                "1. Compare the provided Resume against the Job Description.\n" +
+                "2. Calculate a realistic matchScore (0 to 100) based on how well the skills and experience align.\n" +
+                "3. Identify keywordsMatched (array of strings found in both).\n" +
+                "4. Identify keywordsMissing (array of crucial technologies or qualifications requested in the job description but missing or weak on the resume).\n" +
+                "5. Generate highly specific actionable recommendations (array of strings) to improve the resume for this exact role.\n" +
+                "6. Return strictly valid JSON matching these keys. Do not include any conversational text outside the JSON block.\n\n" +
+                "RESUME:\n" + resumeText + "\n\n" +
+                "JOB DESCRIPTION:\n" + jobDescription;
 
-        // 3. Blend the prompt template with your dynamic inputs
-        PromptTemplate template = new PromptTemplate(promptText);
-        Prompt prompt = template.create(Map.of(
-                "jobDescription", jobDescription,
-                "formatInstructions", converter.getFormat() // Injects the exact JSON schema rules
-        ));
+        Map<String, Object> requestBody = Map.of(
+                "contents", List.of(
+                        Map.of("parts", List.of(
+                                Map.of("text", promptText)
+                        ))
+                )
+        );
 
-        // 4. Fire the request over the wire and map the clean JSON result right back into your Java Object
-        String rawResponse = chatClient.prompt(prompt)
-                .call()
-                .content();
+        try {
+            // Pure native REST call - NO OpenAI headers or paths
+            Map<String, Object> rawResponse = restClient.post()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/v1beta/models/gemini-flash-latest:generateContent")
+                            .queryParam("key", apiKey)
+                            .build())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(requestBody)
+                    .retrieve()
+                    .body(Map.class);
 
-        assert rawResponse != null;
-        return converter.convert(rawResponse);
+            System.out.println("Native Google Response: " + rawResponse);
+
+            return mapToAnalysisResponse(rawResponse);
+
+        } catch (Exception e) {
+            System.err.println("Native Google HTTP call failed: " + e.getMessage());
+            throw new RuntimeException("AI processing failed", e);
+        }
+    }
+
+    private AnalysisResponse mapToAnalysisResponse(Map<String, Object> rawResponse) {
+        try {
+            // Navigate Google's nested response map structure safely
+            List<?> candidates = (List<?>) rawResponse.get("candidates");
+            if (candidates == null || candidates.isEmpty()) {
+                throw new RuntimeException("No candidates returned from Gemini");
+            }
+
+            Map<?, ?> firstCandidate = (Map<?, ?>) candidates.get(0);
+            Map<?, ?> content = (Map<?, ?>) firstCandidate.get("content");
+            List<?> parts = (List<?>) content.get("parts");
+            Map<?, ?> firstPart = (Map<?, ?>) parts.get(0);
+
+            // Grab the raw JSON string wrapped in backticks
+            String rawText = (String) firstPart.get("text");
+
+            // Clean out the markdown wrapper format (```json ... ```) if present
+            if (rawText.contains("```json")) {
+                rawText = rawText.substring(rawText.indexOf("```json") + 7);
+            }
+            if (rawText.contains("```")) {
+                rawText = rawText.substring(0, rawText.lastIndexOf("```"));
+            }
+            rawText = rawText.trim();
+
+            // Use standard Jackson ObjectMapper to turn the clean string into your object fields
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.readValue(rawText, AnalysisResponse.class);
+
+        } catch (Exception e) {
+            System.err.println("Failed to parse Gemini JSON payload: " + e.getMessage());
+
+            return new AnalysisResponse(
+                    0,
+                    new ArrayList<>(),
+                    new ArrayList<>(),
+                    List.of("Pipeline connected, but failed to extract the text block correctly. Check backend logs.")
+            );
+        }
     }
 }

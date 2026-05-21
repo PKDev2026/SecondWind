@@ -1,5 +1,6 @@
 package com.example.second_wind.controller;
 
+import com.example.second_wind.model.dto.AnalysisRequest;
 import com.example.second_wind.model.dto.AnalysisResponse;
 import com.example.second_wind.service.CopilotService;
 import org.springframework.http.ResponseEntity;
@@ -18,14 +19,16 @@ public class CopilotController {
     }
 
     @PostMapping("/analyze")
-    public ResponseEntity<AnalysisResponse> analyzeJob(@RequestBody Map<String, String> request) {
-        String jobDescription = request.get("jobDescription");
+    public AnalysisResponse analyzeJob(@RequestBody AnalysisRequest request) {
+        System.out.println("DEBUG - Received Job Desc Length: " +
+                (request.getJobDescription() != null ? request.getJobDescription().length() : "NULL"));
+        System.out.println("DEBUG - Received Resume Text Length: " +
+                (request.getResumeText() != null ? request.getResumeText().length() : "NULL"));
 
-        if (jobDescription == null || jobDescription.trim().isEmpty()) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        AnalysisResponse response = copilotService.analyzeJobDescription(jobDescription);
-        return ResponseEntity.ok(response);
+        // Pass both parameters down to the updated service layer
+        return copilotService.analyzeJobDescription(
+                request.getJobDescription(),
+                request.getResumeText()
+        );
     }
 }

@@ -6,29 +6,43 @@ import { AnalysisResult } from '@/types';
 
 export default function Copilot() {
   const [jobDescription, setJobDescription] = useState('');
+  const [resumeText, setResumeText] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
   const [results, setResults] = useState<AnalysisResult | null>(null);
 
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!jobDescription.trim()) return;
 
     setAnalyzing(true);
     
-    // Fake timer to simulate the upcoming Spring Boot AI analysis payload
-    setTimeout(() => {
-      setResults({
-        matchScore: 74,
-        keywordsMatched: ['Java', 'Spring Boot', 'PostgreSQL', 'TypeScript', 'REST APIs'],
-        keywordsMissing: ['AWS (S3/EC2)', 'Docker', 'CI/CD Pipelines', 'Microservices Architecture'],
-        recommendations: [
-          'Highlight your experience deploying Spring Boot applications with PostgreSQL.',
-          'Add a section or project bullet point demonstrating your understanding of Docker containers.',
-          'Be prepared to speak on REST API design patterns and transaction management (@Transactional).'
-        ]
+    try {
+      // 1. Send a POST request to your Spring Boot backend
+      const response = await fetch('http://localhost:8080/api/copilot/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json', // Tell Spring Boot we are sending JSON
+        },
+        // 2. Wrap the text in a JSON object matching the backend Map key
+        body: JSON.stringify({ jobDescription: jobDescription, resumeText: resumeText }), 
       });
+      console.log(response);
+
+      if (!response.ok) {
+        throw new Error(`Server responded with status: ${response.status}`);
+      }
+
+      // 3. Parse the dynamic AI payload sent back by Gemini via CopilotService
+      const data = await response.json();
+      console.log(data);
+      setResults(data);
+      
+    } catch (error) {
+      console.error("Failed to fetch AI analysis:", error);
+    } finally {
       setAnalyzing(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -44,26 +58,38 @@ export default function Copilot() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Input Panel */}
-        <div className="lg:col-span-1 space-y-4">
-          <form onSubmit={handleAnalyze} className="rounded-xl border border-slate-800 bg-slate-950 p-6 space-y-4 h-full flex flex-col">
+        <div className="lg:col-span-1">
+          <form onSubmit={handleAnalyze} className="rounded-xl border border-slate-800 bg-slate-950 p-6 space-y-5 h-full flex flex-col">
             <h3 className="text-base font-semibold text-white flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-teal-400" /> Target Role Requirements
             </h3>
             
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-slate-400 mb-2">Paste Job Description *</label>
+            {/* Top Half: Resume Input Box */}
+            <div className="flex-1 flex flex-col">
+              <label className="block text-xs font-medium text-slate-400 mb-2">Your Profile Baseline / Resume *</label>
+              <textarea
+                value={resumeText}
+                onChange={(e) => setResumeText(e.target.value)}
+                placeholder="Paste your technical profile details or full resume context here..."
+                className="w-full h-44 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-teal-500 focus:outline-none resize-none font-mono leading-relaxed"
+              />
+            </div>
+
+            {/* Bottom Half: Job Description Input Box */}
+            <div className="flex-1 flex flex-col">
+              <label className="block text-xs font-medium text-slate-400 mb-2">Target Job Description *</label>
               <textarea
                 value={jobDescription}
                 onChange={(e) => setJobDescription(e.target.value)}
                 placeholder="Paste the full text of the job listing here (Responsibilities, Qualifications, Skills)..."
-                className="w-full h-80 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-teal-500 focus:outline-none resize-none font-mono leading-relaxed"
+                className="w-full h-44 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-teal-500 focus:outline-none resize-none font-mono leading-relaxed"
               />
             </div>
 
             <button
               type="submit"
-              disabled={analyzing || !jobDescription.trim()}
-              className="w-full flex items-center justify-center gap-2 rounded-lg bg-teal-500 px-4 py-2.5 text-sm font-semibold text-slate-950 hover:bg-teal-400 transition-colors disabled:opacity-50 disabled:hover:bg-teal-500"
+              disabled={analyzing || !jobDescription.trim() || !resumeText.trim()}
+              className="w-full flex items-center justify-center gap-2 rounded-lg bg-teal-500 px-4 py-2.5 text-sm font-semibold text-slate-950 hover:bg-teal-400 transition-colors disabled:opacity-50 disabled:hover:bg-teal-500 mt-2"
             >
               {analyzing ? 'Analyzing Vector Alignment...' : 'Run Alignment Scan'} 
               <ArrowRight className="h-4 w-4" />
@@ -76,7 +102,7 @@ export default function Copilot() {
           {!results && !analyzing ? (
             <div className="rounded-xl border border-dashed border-slate-800 bg-slate-950/30 p-12 text-center text-slate-500 h-full flex flex-col justify-center items-center space-y-3">
               <BrainCircuit className="h-12 w-12 text-slate-700 animate-pulse" />
-              <p className="max-w-sm text-sm">Drop a job listing into the scanner on the left to map your engineering footprint against their tech stack.</p>
+              <p className="max-w-sm text-sm">Drop a job listing and resume into the scanner on the left to map your engineering footprint against their tech stack.</p>
             </div>
           ) : analyzing ? (
             <div className="rounded-xl border border-slate-800 bg-slate-950 p-12 text-center text-slate-500 h-full flex flex-col justify-center items-center space-y-4">

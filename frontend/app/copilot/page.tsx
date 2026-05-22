@@ -1,14 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Sparkles, BrainCircuit, CheckCircle2, XCircle, AlertTriangle, ArrowRight } from 'lucide-react';
 import { AnalysisResult } from '@/types';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function Copilot() {
   const [jobDescription, setJobDescription] = useState('');
   const [resumeText, setResumeText] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
   const [results, setResults] = useState<AnalysisResult | null>(null);
+
+  const { user, loading: authLoading } = useAuth();
+
+  const router = useRouter();
+
+  useEffect(() => {
+      if (!authLoading && !user) router.push('/login');
+    }, [user, authLoading, router]);
+  
+    if (authLoading || !user) return null;
 
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();

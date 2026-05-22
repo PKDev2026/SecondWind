@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react';
 import { api } from '@/utils/api';
 import { JobApplication, ApplicationStatus } from '@/types';
 import { Briefcase, Plus, Link2, Calendar } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function JobTracker() {
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Form State
   const [jobTitle, setJobTitle] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [companyDomain, setCompanyDomain] = useState('');
@@ -17,6 +17,14 @@ export default function JobTracker() {
   const [salaryRange, setSalaryRange] = useState('');
   const [status, setStatus] = useState<ApplicationStatus>('APPLIED');
   const [currentStage, setCurrentStage] = useState('Applied');
+
+  const { user, loading: authLoading } = useAuth();
+
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!authLoading && !user) router.push('/login');
+  }, [user, authLoading, router]);
 
   // Fetch applications on load
   const fetchApps = () => {
@@ -29,8 +37,12 @@ export default function JobTracker() {
   };
 
   useEffect(() => {
+    if (!user) return;
     fetchApps();
-  }, []);
+  }, [user]);
+
+
+  if (authLoading || !user) return null;
 
   // Handle Form Submission
   const handleSubmit = async (e: React.FormEvent) => {

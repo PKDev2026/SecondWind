@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.JdbcType;
 import org.hibernate.dialect.PostgreSQLEnumJdbcType;
-import org.hibernate.annotations.JdbcType;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
 
@@ -21,6 +20,10 @@ public class JobApplication {
     @JoinColumn(name = "company_id", nullable = false)
     private Company company;
 
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
     @Column(name = "job_title", nullable = false)
     private String jobTitle;
 
@@ -31,7 +34,7 @@ public class JobApplication {
     private String salaryRange;
 
     @Enumerated(EnumType.STRING)
-    @JdbcType(PostgreSQLEnumJdbcType.class)
+    @JdbcType(org.hibernate.dialect.PostgreSQLEnumJdbcType.class)
     @Column(name = "status", columnDefinition = "application_status")
     private ApplicationStatus status;
 

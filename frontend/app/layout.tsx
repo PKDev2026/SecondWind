@@ -4,6 +4,7 @@ import "./globals.css";
 import Link from "next/link";
 import { LayoutDashboard, Briefcase, FileText } from "lucide-react";
 import { AuthProvider } from "@/context/AuthContext";
+import LogoutButton from "./LogoutButton";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,7 +24,7 @@ export default function RootLayout({
         <AuthProvider>
           <div className="flex min-h-screen">
             {/* Sidebar Component */}
-            <aside className="w-64 border-r border-slate-800 bg-slate-950 p-6 flex flex-col justify-between">
+            <aside className="w-64 border-r border-slate-800 bg-slate-950 p-6 flex flex-col justify-between h-screen sticky top-0">
               <div>
                 <div className="flex items-center gap-2 mb-8">
                   <div className="h-8 w-8 rounded-lg bg-teal-500 flex items-center justify-center font-bold text-slate-950">
@@ -45,8 +46,12 @@ export default function RootLayout({
                 </nav>
               </div>
               
-              <div className="text-xs text-slate-500 border-t border-slate-800 pt-4">
-                Job OS v1.0.0 • Shift Gears
+              <div className="border-t border-slate-800 pt-4 space-y-3">
+                <LogoutButton />
+                <div className="px-1 pt-1">
+                  <p className="text-[10px] uppercase font-semibold tracking-wider text-slate-600">Job OS v1.0.0</p>
+                  <p className="text-xs text-slate-500 font-medium">Shift Gears</p>
+                </div>
               </div>
             </aside>
 

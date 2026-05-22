@@ -35,6 +35,9 @@ public class AuthController {
         User user = new User();
         user.setEmail(req.getEmail());
         user.setPasswordHash(passwordEncoder.encode(req.getPassword()));
+        user.setFirstName(req.getFirstName());
+        user.setLastName(req.getLastName());
+
         userRepository.save(user);
         return ResponseEntity.ok("Registered successfully.");
     }

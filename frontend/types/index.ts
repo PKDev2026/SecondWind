@@ -43,3 +43,13 @@ export interface AnalysisResult {
   keywordsMissing: string[];
   recommendations: string[];
 }
+
+export interface User {
+  email: string;
+  firstName: string | null;
+}
+
+export interface AuthRequest {
+  email: string;
+  password: string;
+}

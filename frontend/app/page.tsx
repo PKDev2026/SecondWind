@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
 import { api } from '@/utils/api';
 import { JobApplication } from '@/types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -10,8 +12,19 @@ export default function Dashboard() {
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  const { user, loading: authLoading } = useAuth();
 
+  const router = useRouter();
+
+  // Auth guard — redirect to login if not authenticated
   useEffect(() => {
+    if (!authLoading && !user) router.push('/login');
+  }, [user, authLoading, router]);
+
+  // Data fetch — only runs once auth is confirmed
+  useEffect(() => {
+    if (!user) return;
     api.getApplications()
       .then((data) => {
         setApplications(data);
@@ -22,7 +35,10 @@ export default function Dashboard() {
         setError('Could not connect to Spring Boot API. Make sure backend is running on port 8080.');
         setLoading(false);
       });
-  }, []);
+  }, [user]);
+
+  // Block render until auth resolves
+  if (authLoading || !user) return null;
 
   if (loading) {
     return (

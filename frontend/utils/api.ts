@@ -50,12 +50,12 @@ export const api = {
   },
 
   // Auth
-  register: async (email: string, password: string): Promise<string> => {
+  register: async (email: string, password: string, firstName: string, lastName: string): Promise<string> => {
     const res = await fetch(`http://localhost:8080/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, firstName, lastName }),
     });
     if (!res.ok) throw new Error(await res.text());
     return res.text();

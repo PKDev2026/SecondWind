@@ -21,8 +21,8 @@ public class ResumeVersionService {
         return resumeVersionRepository.findByJobApplicationId(jobId);
     }
 
-    public ResumeVersion saveTailoredVersion(Long jobId, String versionName, String bullets, String skills) {
-        JobApplication app = jobApplicationService.getJobApplicationById(jobId);
+    public ResumeVersion saveTailoredVersion(Integer jobId, String versionName, String bullets, String skills, String email) {
+        JobApplication app = jobApplicationService.getJobApplicationById(jobId, email);
 
         ResumeVersion version = new ResumeVersion();
         version.setJobApplication(app);

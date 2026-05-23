@@ -36,7 +36,7 @@ export default function Copilot() {
         headers: {
           'Content-Type': 'application/json', // Tell Spring Boot we are sending JSON
         },
-        // 2. Wrap the text in a JSON object matching the backend Map key
+        credentials: 'include',
         body: JSON.stringify({ jobDescription: jobDescription, resumeText: resumeText }), 
       });
       console.log(response);

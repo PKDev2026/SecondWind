@@ -9,7 +9,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/companies")
-@CrossOrigin(origins = "http://localhost:3000") // Connects to your Next.js app port
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class CompanyController {
 
     private final CompanyService companyService;

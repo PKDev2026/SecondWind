@@ -9,7 +9,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/copilot")
-@CrossOrigin(origins = "http://localhost:3000") // Allows your Next.js frontend to talk to your backend safely
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class CopilotController {
 
     private final CopilotService copilotService;

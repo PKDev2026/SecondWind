@@ -107,4 +107,23 @@ export const api = {
     
     return res.json();
   },
+
+  saveResumeVersion: async (
+    jobId: number, 
+    versionName: string, 
+    tailoredBullets: string, 
+    skillsAligned: string
+  ): Promise<ResumeVersion> => {
+    const url = `${BASE_URL}/resumes/application/${jobId}?versionName=${encodeURIComponent(versionName)}`;
+    
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ tailoredBullets, skillsAligned }),
+    });
+
+    if (!res.ok) throw new Error('Failed to save tailored resume version');
+    return res.json();
+  },
 };

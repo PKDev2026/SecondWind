@@ -1,4 +1,4 @@
-import { JobApplication, User } from "@/types";
+import { JobApplication, ResumeVersion, User } from "@/types";
 
 const BASE_URL = 'http://localhost:8080/api';
 
@@ -89,5 +89,22 @@ export const api = {
     } catch {
       return null;
     }
+  },
+
+  getOptimizationHistory: async (): Promise<ResumeVersion[]> => {
+    const res = await fetch(`${BASE_URL}/resumes/user-history`, {
+      credentials: 'include',
+    });
+    
+    if (!res.ok) {
+      // Log the exact status code (e.g., 401, 403, 404, 500) and text
+      const errorText = await res.text().catch(() => "No error body text available");
+      console.error(`Backend Response Failed! HTTP Status: ${res.status}`);
+      console.error(`Backend Error Body:`, errorText);
+      
+      throw new Error(`Failed to fetch optimization history. Status: ${res.status}`);
+    }
+    
+    return res.json();
   },
 };

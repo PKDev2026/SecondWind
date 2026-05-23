@@ -40,11 +40,15 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (token != null && jwtUtil.isValid(token)) {
             String email = jwtUtil.extractEmail(token);
+            System.out.println("Filter Step 2: Token valid! Extracted email: " + email); // <-- Debug line A
+
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
             UsernamePasswordAuthenticationToken auth =
                     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
             auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(auth);
+        } else {
+            System.out.println("Filter Step 2 Fallback: Token was null or invalid. Token value: " + token); // <-- Debug line B
         }
 
         chain.doFilter(request, response);

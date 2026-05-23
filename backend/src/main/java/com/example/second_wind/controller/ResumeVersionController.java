@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import com.example.second_wind.model.dto.TailoredBody;
 
 import java.util.List;
 
@@ -25,11 +26,20 @@ public class ResumeVersionController {
         return ResponseEntity.ok(resumeVersionService.getVersionsByJobId(jobId));
     }
 
+    @GetMapping("/user-history")
+    public ResponseEntity<List<ResumeVersion>> getUserResumeHistory(Authentication auth) {
+        if (auth == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        // Calls a service method to look up versions through the user's job applications
+        List<ResumeVersion> history = resumeVersionService.getAllVersionsForUser(auth.getName());
+        return ResponseEntity.ok(history);
+    }
+
     @PostMapping("/application/{jobId}")
     public ResponseEntity<ResumeVersion> saveVersion(
             @PathVariable Integer jobId,
             @RequestParam String versionName,
-            @RequestBody TailoredBodyDTO body,
+            @RequestBody TailoredBody body,
             Authentication auth) { // 1. Inject the Authentication context
 
         if (auth == null) {
@@ -46,15 +56,5 @@ public class ResumeVersionController {
         );
 
         return ResponseEntity.ok(saved);
-    }
-
-    public static class TailoredBodyDTO {
-        private String tailoredBullets;
-        private String skillsAligned;
-
-        public String getTailoredBullets() { return tailoredBullets; }
-        public void setTailoredBullets(String tailoredBullets) { this.tailoredBullets = tailoredBullets; }
-        public String getSkillsAligned() { return skillsAligned; }
-        public void setSkillsAligned(String skillsAligned) { this.skillsAligned = skillsAligned; }
     }
 }

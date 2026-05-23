@@ -42,4 +42,8 @@ public class ResumeVersionService {
 
         return resumeVersionRepository.save(version);
     }
+
+    public List<ResumeVersion> getAllVersionsForUser(String email) {
+        return resumeVersionRepository.findByJobApplicationUserEmail(email);
+    }
 }

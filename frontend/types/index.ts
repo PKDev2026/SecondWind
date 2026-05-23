@@ -53,3 +53,15 @@ export interface AuthRequest {
   email: string;
   password: string;
 }
+
+export interface CopilotScan {
+    id: number;
+    jobTitle: string;
+    companyName: string | null;
+    rawJobDescription: string;
+    matchScore: number;
+    keywordsMatched: string;
+    keywordsMissing: string;
+    recommendations: string;
+    createdAt: string;
+}

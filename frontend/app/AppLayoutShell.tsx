@@ -39,6 +39,9 @@ export default function AppLayoutShell({ children }: { children: React.ReactNode
             <Link href="/copilot" className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium text-sm ${pathname === "/copilot" ? "text-teal-400 bg-slate-900" : "text-slate-400 hover:text-teal-400 hover:bg-slate-900/50"}`}>
               <FileText className="h-5 w-5" /> AI Resume Copilot
             </Link>
+            <Link href="/history" className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium text-sm ${pathname === "/history" ? "text-teal-400 bg-slate-900" : "text-slate-400 hover:text-teal-400 hover:bg-slate-900/50"}`}>
+              <FileText className="h-5 w-5" /> Saved Optimizations
+            </Link>
           </nav>
         </div>
         

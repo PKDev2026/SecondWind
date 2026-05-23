@@ -11,45 +11,78 @@ export default function Copilot() {
   const [resumeText, setResumeText] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
   const [results, setResults] = useState<AnalysisResult | null>(null);
+  const [jobTitle, setJobTitle] = useState<string>('');
+  const [companyName, setCompanyName] = useState<string>('');
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
 
   const { user, loading: authLoading } = useAuth();
 
   const router = useRouter();
 
   useEffect(() => {
-      if (!authLoading && !user) router.push('/login');
-    }, [user, authLoading, router]);
+    if (!authLoading && !user) router.push('/login');
+  }, [user, authLoading, router]);
   
-    if (authLoading || !user) return null;
+  if (authLoading || !user) return null;
+
+  const handleSaveStandaloneScan = async () => {
+    if (!results) return;
+    setIsSaving(true);
+    setSaveSuccess(false);
+
+    try {
+      // Point to your backend endpoint
+      const response = await fetch('http://localhost:8080/api/copilot/scans', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', 
+        body: JSON.stringify({
+          jobTitle: jobTitle.trim() || 'Untargeted Scan',
+          companyName: companyName.trim() || null,
+          rawJobDescription: jobDescription,
+          analysisData: results 
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to archive scan payload: ${response.status}`);
+      }
+
+      setSaveSuccess(true);
+    } catch (error) {
+      console.error("Error saving standalone report to history:", error);
+    } finally {
+      setIsSaving(false);
+    }
+};
 
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!jobDescription.trim()) return;
+    if (!jobDescription.trim() || !resumeText.trim()) return;
 
     setAnalyzing(true);
+    setResults(null);
+    setSaveSuccess(false);
     
     try {
-      // 1. Send a POST request to your Spring Boot backend
       const response = await fetch('http://localhost:8080/api/copilot/analyze', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json', // Tell Spring Boot we are sending JSON
+          'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ jobDescription: jobDescription, resumeText: resumeText }), 
+        body: JSON.stringify({ jobDescription, resumeText }), 
       });
-      console.log(response);
 
       if (!response.ok) {
         throw new Error(`Server responded with status: ${response.status}`);
       }
 
-      // 3. Parse the dynamic AI payload sent back by Gemini via CopilotService
       const data = await response.json();
-      console.log(data);
       setResults(data);
-      
     } catch (error) {
       console.error("Failed to fetch AI analysis:", error);
     } finally {
@@ -76,7 +109,6 @@ export default function Copilot() {
               <Sparkles className="h-5 w-5 text-teal-400" /> Target Role Requirements
             </h3>
             
-            {/* Top Half: Resume Input Box */}
             <div className="flex-1 flex flex-col">
               <label className="block text-xs font-medium text-slate-400 mb-2">Your Profile Baseline / Resume *</label>
               <textarea
@@ -87,7 +119,6 @@ export default function Copilot() {
               />
             </div>
 
-            {/* Bottom Half: Job Description Input Box */}
             <div className="flex-1 flex flex-col">
               <label className="block text-xs font-medium text-slate-400 mb-2">Target Job Description *</label>
               <textarea
@@ -148,8 +179,8 @@ export default function Copilot() {
                     <CheckCircle2 className="h-4 w-4" /> Strong Matches Found
                   </h4>
                   <div className="flex flex-wrap gap-2">
-                    {results?.keywordsMatched.map((kw: string) => (
-                      <span key={kw} className="px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    {results?.keywordsMatched.map((kw: string, index: number) => (
+                      <span key={`${kw}-${index}`} className="px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                         {kw}
                       </span>
                     ))}
@@ -183,6 +214,57 @@ export default function Copilot() {
                   ))}
                 </ul>
               </div>
+
+              {/* Standalone Save Form Card */}
+              <div className="mt-6 border border-slate-800 bg-slate-950 rounded-xl p-6 space-y-4">
+                <div>
+                  <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                    Save Optimization to History Log
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Archive this analysis snapshot to your account logs so you can review metrics or access it later via your history dashboard.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Target Job Title</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Full Stack Engineer"
+                      value={jobTitle} 
+                      onChange={(e) => setJobTitle(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Company / Organization</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Frost Bank"
+                      value={companyName} 
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  {saveSuccess ? (
+                    <span className="text-xs text-emerald-400 font-medium">✓ Successfully committed to your personal profile logs!</span>
+                  ) : <div />}
+                  
+                  <button
+                    onClick={handleSaveStandaloneScan}
+                    disabled={isSaving}
+                    className="bg-teal-500 hover:bg-teal-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-semibold px-5 py-2 rounded-lg text-sm transition-all ml-auto"
+                  >
+                    {isSaving ? "Archiving..." : "Archive Scan Report"}
+                  </button>
+                </div>
+              </div>
+
             </div>
           )}
         </div>

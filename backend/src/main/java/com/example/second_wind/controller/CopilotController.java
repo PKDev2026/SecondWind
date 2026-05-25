@@ -134,4 +134,31 @@ public class CopilotController {
 
         return ResponseEntity.ok(response);
     }
+
+    @DeleteMapping("/resume/clear")
+    public ResponseEntity<?> clearProfileResume(Authentication auth) {
+        if (auth == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User context not authenticated");
+        }
+
+        try {
+            String email = auth.getName();
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Authenticated user record not found"));
+
+            // Nullify all three resume columns to wipe the slate completely clean
+            user.setResumePdfData(null);
+            user.setResumeFileName(null);
+            user.setResumeExtractedText(null);
+
+            // Save the updated user back to PostgreSQL
+            userRepository.save(user);
+
+            return ResponseEntity.ok().body("{\"message\": \"Resume data successfully cleared from profile\"}");
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to clear resume data: " + e.getMessage());
+        }
+    }
 }

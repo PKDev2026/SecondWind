@@ -22,7 +22,11 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/copilot")
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+@CrossOrigin(
+        origins = "http://localhost:3000",
+        allowCredentials = "true",
+        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS}
+)
 public class CopilotController {
 
     private final CopilotService copilotService;

@@ -5,6 +5,7 @@ import com.example.second_wind.model.User;
 import com.example.second_wind.model.dto.AnalysisRequest;
 import com.example.second_wind.model.dto.AnalysisResponse;
 import com.example.second_wind.model.dto.SaveScanRequest;
+import com.example.second_wind.repository.CopilotScanRepository;
 import com.example.second_wind.repository.UserRepository;
 import com.example.second_wind.service.CopilotService;
 import com.example.second_wind.service.CopilotScanService;
@@ -31,11 +32,13 @@ public class CopilotController {
 
     private final CopilotService copilotService;
     private final CopilotScanService copilotScanService;
+    private final CopilotScanRepository copilotScanRepository;
     private final UserRepository userRepository;
 
-    public CopilotController(CopilotService copilotService, CopilotScanService copilotScanService, UserRepository userRepository) {
+    public CopilotController(CopilotService copilotService, CopilotScanService copilotScanService, CopilotScanRepository copilotScanRepository, UserRepository userRepository) {
         this.copilotService = copilotService;
         this.copilotScanService = copilotScanService;
+        this.copilotScanRepository = copilotScanRepository;
         this.userRepository = userRepository;
     }
 
@@ -63,6 +66,39 @@ public class CopilotController {
 
         CopilotScan saved = copilotScanService.saveStandaloneScan(request, auth.getName());
         return ResponseEntity.ok(saved);
+    }
+
+    @DeleteMapping("/scans/{id}")
+    public ResponseEntity<?> deleteScanRecord(@PathVariable Long id, Authentication auth) {
+        if (auth == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User context not authenticated");
+        }
+
+        try {
+            String email = auth.getName();
+
+            // 1. Fetch the target scan record from the database
+            CopilotScan scan = copilotScanRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Scan record not found with ID: " + id));
+
+            // 2. Fetch the authenticated user profile using your existing userRepository
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Authenticated user record missing from context"));
+
+            // 3. Security check: Compare the numeric IDs directly
+            if (!scan.getUserId().equals(user.getId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Unauthorized to delete this resource record");
+            }
+
+            // Delete the record from PostgreSQL
+            copilotScanRepository.delete(scan);
+
+            return ResponseEntity.ok().body("{\"message\": \"Scan record successfully dropped from historical logs\"}");
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to delete historical scan snapshot: " + e.getMessage());
+        }
     }
 
     @GetMapping("/history")

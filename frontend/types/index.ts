@@ -72,3 +72,7 @@ export interface AnalysisResult {
   keywordsMissing: string[];
   recommendations: string[];
 }
+
+export interface ResumeUploadZoneProps {
+  onResumeLoaded: (extractedText: string) => void;
+}

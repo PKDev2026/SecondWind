@@ -1,10 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { FileText, RefreshCw, UploadCloud, CheckCircle, AlertTriangle } from "lucide-react";
-
-interface ResumeUploadZoneProps {
-  onResumeLoaded: (extractedText: string) => void;
-}
+import { ResumeUploadZoneProps } from '@/types';
 
 export default function ResumeUploadZone({ onResumeLoaded }: ResumeUploadZoneProps) {
   const [fileName, setFileName] = useState<string>("");

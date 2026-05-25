@@ -2,7 +2,9 @@ package com.example.second_wind.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.JdbcTypeCode;
 
+import java.sql.Types;
 import java.time.LocalDateTime;
 
 @Entity
@@ -31,6 +33,16 @@ public class User {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "resume_pdf_data")
+    @JdbcTypeCode(Types.BINARY)
+    private byte[] resumePdfData;
+
+    @Column(name = "resume_file_name")
+    private String resumeFileName;
+
+    @Column(name = "resume_extracted_text", columnDefinition = "text")
+    private String resumeExtractedText;
 
     @PrePersist
     protected void onCreate() {

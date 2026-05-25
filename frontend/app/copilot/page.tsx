@@ -1,10 +1,18 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { Sparkles, BrainCircuit, CheckCircle2, XCircle, AlertTriangle, ArrowRight } from 'lucide-react';
-import { AnalysisResult } from '@/types';
-import { useAuth } from '@/context/AuthContext';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from "@/context/AuthContext";
+import ResumeUploadZone from '../resumeUploadZone/page'; // Pure architectural separation
+import { 
+  BrainCircuit, 
+  Sparkles, 
+  ArrowRight, 
+  CheckCircle2, 
+  XCircle, 
+  AlertTriangle 
+} from 'lucide-react';
+import { AnalysisResult } from '@/types';
 
 export default function Copilot() {
   const [jobDescription, setJobDescription] = useState('');
@@ -17,7 +25,6 @@ export default function Copilot() {
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
 
   const { user, loading: authLoading } = useAuth();
-
   const router = useRouter();
 
   useEffect(() => {
@@ -32,12 +39,9 @@ export default function Copilot() {
     setSaveSuccess(false);
 
     try {
-      // Point to your backend endpoint
       const response = await fetch('http://localhost:8080/api/copilot/scans', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include', 
         body: JSON.stringify({
           jobTitle: jobTitle.trim() || 'Untargeted Scan',
@@ -47,17 +51,14 @@ export default function Copilot() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`Failed to archive scan payload: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`Failed to archive scan payload: ${response.status}`);
       setSaveSuccess(true);
     } catch (error) {
       console.error("Error saving standalone report to history:", error);
     } finally {
       setIsSaving(false);
     }
-};
+  };
 
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,17 +71,12 @@ export default function Copilot() {
     try {
       const response = await fetch('http://localhost:8080/api/copilot/analyze', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ jobDescription, resumeText }), 
       });
 
-      if (!response.ok) {
-        throw new Error(`Server responded with status: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
       const data = await response.json();
       setResults(data);
     } catch (error) {
@@ -100,6 +96,8 @@ export default function Copilot() {
           Scan target job descriptions against your core profile to extract keywords, reveal skill gaps, and generate tailoring vectors.
         </p>
       </div>
+
+      <ResumeUploadZone onResumeLoaded={(extractedText) => setResumeText(extractedText)} />
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Input Panel */}
@@ -256,6 +254,7 @@ export default function Copilot() {
                   ) : <div />}
                   
                   <button
+                    type="button"
                     onClick={handleSaveStandaloneScan}
                     disabled={isSaving}
                     className="bg-teal-500 hover:bg-teal-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-semibold px-5 py-2 rounded-lg text-sm transition-all ml-auto"

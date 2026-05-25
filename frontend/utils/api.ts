@@ -126,4 +126,32 @@ export const api = {
     if (!res.ok) throw new Error('Failed to save tailored resume version');
     return res.json();
   },
+
+  // Send the binary PDF data up to the backend
+  uploadResumeFile: async (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("http://localhost:8080/api/copilot/resume/upload", {
+          method: "POST",
+          body: formData, // Do NOT set Content-Type headers manually here; FormData does it automatically
+          credentials: "include"
+      });
+      
+      if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(errorText || "Upload failed");
+      }
+      return res.json();
+  },
+
+  // Pull down the clean parsed text and filename metadata
+  fetchSavedResumeData: async () => {
+      const res = await fetch("http://localhost:8080/api/copilot/resume/data", {
+          method: "GET",
+          credentials: "include"
+      });
+      if (!res.ok) throw new Error("Failed to load profile sync data");
+      return res.json(); // Returns { fileName: "...", extractedText: "..." }
+  },
 };

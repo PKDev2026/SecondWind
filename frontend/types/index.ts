@@ -65,3 +65,10 @@ export interface CopilotScan {
     recommendations: string;
     createdAt: string;
 }
+
+export interface AnalysisResult {
+  matchScore: number;
+  keywordsMatched: string[];
+  keywordsMissing: string[];
+  recommendations: string[];
+}

@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from "react";
-import { FileText, RefreshCw, UploadCloud, CheckCircle, AlertTriangle } from "lucide-react";
+import { FileText, RefreshCw, UploadCloud, CheckCircle, AlertTriangle, Trash2 } from "lucide-react";
 import { ResumeUploadZoneProps } from '@/types';
 
 export default function ResumeUploadZone({ onResumeLoaded }: ResumeUploadZoneProps) {
@@ -8,7 +7,6 @@ export default function ResumeUploadZone({ onResumeLoaded }: ResumeUploadZonePro
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Automatically check if the user already has a resume stored in PostgreSQL on mount
   useEffect(() => {
     fetch("http://localhost:8080/api/copilot/resume/data", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
@@ -53,17 +51,40 @@ export default function ResumeUploadZone({ onResumeLoaded }: ResumeUploadZonePro
       setFileName(selectedFile.name);
       setStatusMessage({ type: "success", text: "Profile resume successfully synced!" });
 
-      // Pull down the freshly parsed text to auto-populate the layout state instantly
       const dataRes = await fetch("http://localhost:8080/api/copilot/resume/data", { credentials: "include" });
       const data = await dataRes.json();
       if (data.extractedText) {
         onResumeLoaded(data.extractedText);
       }
     } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Failed to stream binary content.";
-        setStatusMessage({ type: "error", text: errorMessage });
+      const errorMessage = error instanceof Error ? error.message : "Failed to stream binary content.";
+      setStatusMessage({ type: "error", text: errorMessage });
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  // NEW: Handler to clear out the database data and clear frontend state
+  const handleClearResume = async () => {
+    if (!confirm("Are you sure you want to permanently clear your stored resume data?")) return;
+    
+    try {
+      const res = await fetch("http://localhost:8080/api/copilot/resume/clear", {
+        method: "DELETE",
+        credentials: "include"
+      });
+
+      if (!res.ok) throw new Error("Failed to clear profile from server.");
+
+      // Reset local component states
+      setFileName("");
+      setStatusMessage({ type: "success", text: "Stored resume wiped successfully." });
+      
+      // Clear out the main page's state text box instantly
+      onResumeLoaded("");
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete data.";
+      setStatusMessage({ type: "error", text: errorMessage });
     }
   };
 
@@ -79,26 +100,40 @@ export default function ResumeUploadZone({ onResumeLoaded }: ResumeUploadZonePro
           </p>
         </div>
 
-        <label
-          className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer border transition-all ${
-            isUploading
-              ? "bg-slate-900 border-slate-800 text-slate-500 pointer-events-none"
-              : "bg-slate-900 border-slate-800 text-white hover:bg-slate-800 hover:border-slate-700"
-          }`}
-        >
-          {isUploading ? (
-            <>
-              <RefreshCw className="h-3.5 w-3.5 animate-spin text-teal-400" />
-              Parsing PDF Bytes...
-            </>
-          ) : (
-            <>
-              <UploadCloud className="h-3.5 w-3.5 text-slate-400" />
-              {fileName ? "Replace Stored PDF" : "Upload Master PDF"}
-            </>
+        <div className="flex items-center gap-2">
+          {/* NEW: Conditional Clear/Trash Button */}
+          {fileName && !isUploading && (
+            <button
+              type="button"
+              onClick={handleClearResume}
+              className="flex items-center justify-center p-2 rounded-lg bg-slate-900 border border-slate-800 text-rose-400 hover:bg-rose-950/20 hover:border-rose-900/50 transition-all"
+              title="Clear Saved Resume"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
           )}
-          <input type="file" accept=".pdf" className="hidden" onChange={handleFileChange} disabled={isUploading} />
-        </label>
+
+          <label
+            className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold cursor-pointer border transition-all ${
+              isUploading
+                ? "bg-slate-900 border-slate-800 text-slate-500 pointer-events-none"
+                : "bg-slate-900 border-slate-800 text-white hover:bg-slate-800 hover:border-slate-700"
+            }`}
+          >
+            {isUploading ? (
+              <>
+                <RefreshCw className="h-3.5 w-3.5 animate-spin text-teal-400" />
+                Parsing PDF Bytes...
+              </>
+            ) : (
+              <>
+                <UploadCloud className="h-3.5 w-3.5 text-slate-400" />
+                {fileName ? "Replace Stored PDF" : "Upload Master PDF"}
+              </>
+            )}
+            <input type="file" accept=".pdf" className="hidden" onChange={handleFileChange} disabled={isUploading} />
+          </label>
+        </div>
       </div>
 
       {fileName && !statusMessage && (

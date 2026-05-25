@@ -1,7 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, Briefcase, Calendar, CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { 
+    FileText, 
+    Briefcase, 
+    Calendar, 
+    CheckCircle2, 
+    XCircle, 
+    AlertCircle, 
+    ChevronDown, 
+    ChevronUp,
+    BarChart3,
+    Target,
+    Layers
+} from "lucide-react";
 import { CopilotScan } from "@/types";
 
 export default function HistoryPage() {
@@ -10,10 +22,9 @@ export default function HistoryPage() {
     const [expandedScanId, setExpandedScanId] = useState<number | null>(null);
 
     useEffect(() => {
-        // Fetch historical snapshots directly from our clean-slate account table
         fetch('http://localhost:8080/api/copilot/history', {
             method: 'GET',
-            credentials: 'include', // Automatically passes session headers/cookies
+            credentials: 'include',
         })
         .then((res) => {
             if (!res.ok) throw new Error(`HTTP history error: ${res.status}`);
@@ -33,7 +44,6 @@ export default function HistoryPage() {
         setExpandedScanId(prevId => prevId === id ? null : id);
     };
 
-    // Safely deserializes native JSON column strings into clean array iterators
     const safelyParseJsonArray = (jsonString: string): string[] => {
         try {
             return JSON.parse(jsonString || '[]');
@@ -41,6 +51,37 @@ export default function HistoryPage() {
             return [];
         }
     };
+
+    const calculateAnalytics = (scans: CopilotScan[]) => {
+        if (!scans || scans.length === 0) {
+            return { totalScans: 0, averageScore: 0, topMissingSkills: [] };
+        }
+
+        const totalScans = scans.length;
+        const totalScore = scans.reduce((sum, scan) => sum + (scan.matchScore || 0), 0);
+        const averageScore = Math.round(totalScore / totalScans);
+        const frequencyMap: Record<string, number> = {};
+        
+        scans.forEach((scan) => {
+            const missing = safelyParseJsonArray(scan.keywordsMissing);
+            
+            missing.forEach((skill) => {
+                const normalizedSkill = skill.trim();
+                if (normalizedSkill) {
+                    frequencyMap[normalizedSkill] = (frequencyMap[normalizedSkill] || 0) + 1;
+                }
+            });
+        });
+
+        const topMissingSkills = Object.entries(frequencyMap)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)                 
+            .map(([skill]) => skill);    
+
+        return { totalScans, averageScore, topMissingSkills };
+    };
+
+    const { totalScans, averageScore, topMissingSkills } = calculateAnalytics(history);
 
     if (loading) {
         return (
@@ -53,11 +94,62 @@ export default function HistoryPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold tracking-tight text-white">Saved Optimizations</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                    <BarChart3 className="h-6 w-6 text-teal-400" /> Saved Optimizations
+                </h1>
                 <p className="text-sm text-slate-400">
                     Review standalone alignment diagnostics, structural keywords, and missing entities logged for your profile.
                 </p>
             </div>
+
+            {/* Global Metrics Row */}
+            {history.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4 flex items-center gap-4">
+                        <div className="p-2.5 rounded-lg bg-teal-500/10 border border-teal-500/20 text-teal-400">
+                            <Layers className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Total Alignment Runs</p>
+                            <p className="text-xl font-bold text-white mt-0.5">{totalScans}</p>
+                        </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4 flex items-center gap-4">
+                        <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                            <Target className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Average Compatibility</p>
+                            <p className="text-xl font-bold text-white mt-0.5">{averageScore}%</p>
+                        </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4 flex items-center gap-4">
+                        <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                            <AlertCircle className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Primary Stack Gaps</p>
+                            <div className="flex gap-1.5 mt-1.5 overflow-hidden">
+                                {topMissingSkills.length > 0 ? (
+                                    topMissingSkills.map((skill, i) => (
+                                        <span 
+                                            key={i} 
+                                            className="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-amber-500/10 text-amber-400 border border-amber-500/10 truncate max-w-22.5"
+                                            title={skill}
+                                        >
+                                            {skill}
+                                        </span>
+                                    ))
+                                ) : (
+                                    <span className="text-xs text-slate-500 italic">No gaps tracked</span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {history.length === 0 ? (
                 <div className="border border-dashed border-slate-800 rounded-xl p-12 text-center bg-slate-950/40">
@@ -85,8 +177,8 @@ export default function HistoryPage() {
                                 }`}
                                 onClick={() => !isExpanded && toggleScanExpand(scan.id)}
                             >
-                                {/* CARD HEADER: Always visible (Position, Company, Match %, Date) */}
-                                <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+                                {/* CARD HEADER (Position, Company, Match %, Date) */}
+                                <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 tracking-tight ${
                                     isExpanded ? 'border-b border-slate-900 pb-4' : ''
                                 }`}>
                                     <div className="space-y-1">
@@ -115,6 +207,7 @@ export default function HistoryPage() {
                                         
                                         {/* Dropdown chevron utility button */}
                                         <button 
+                                            type="button"
                                             onClick={(e) => {
                                                 e.stopPropagation(); // Prevents layout target double-triggering
                                                 toggleScanExpand(scan.id);
@@ -127,7 +220,7 @@ export default function HistoryPage() {
                                     </div>
                                 </div>
 
-                                {/* EXPANDABLE BODY: Only renders when item is active */}
+                                {/* EXPANDABLE BODY: Renders when item is active */}
                                 {isExpanded && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                                         <div className="space-y-3 bg-slate-900/30 p-4 rounded-xl border border-slate-900 flex flex-col justify-between">

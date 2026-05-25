@@ -12,7 +12,8 @@ import {
     ChevronUp,
     BarChart3,
     Target,
-    Layers
+    Layers,
+    Trash2
 } from "lucide-react";
 import { CopilotScan } from "@/types";
 
@@ -22,9 +23,10 @@ export default function HistoryPage() {
     const [expandedScanId, setExpandedScanId] = useState<number | null>(null);
 
     useEffect(() => {
+        // Fetch historical snapshots directly from our clean-slate account table
         fetch('http://localhost:8080/api/copilot/history', {
             method: 'GET',
-            credentials: 'include',
+            credentials: 'include', 
         })
         .then((res) => {
             if (!res.ok) throw new Error(`HTTP history error: ${res.status}`);
@@ -52,6 +54,35 @@ export default function HistoryPage() {
         }
     };
 
+    // NEW: Deletion method that handles the API invocation and state clearing
+    const handleDeleteScan = async (id: number, event: React.MouseEvent) => {
+        event.stopPropagation(); // Stop click from bubbling up and expanding/collapsing the card
+        
+        if (!confirm("Are you sure you want to permanently discard this scan report from your log history?")) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`http://localhost:8080/api/copilot/scans/${id}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+
+            if (!res.ok) throw new Error("Failed to drop record from server context.");
+
+            // Drop the target item out of our reactive local state to trigger animation frames
+            setHistory(prevHistory => prevHistory.filter(scan => scan.id !== id));
+            
+            // Close the panel context if the deleted panel happened to be the expanded one
+            if (expandedScanId === id) {
+                setExpandedScanId(null);
+            }
+        } catch (error) {
+            console.error("Error purging historical item:", error);
+            alert("Could not process record deletion at this time.");
+        }
+    };
+
     const calculateAnalytics = (scans: CopilotScan[]) => {
         if (!scans || scans.length === 0) {
             return { totalScans: 0, averageScore: 0, topMissingSkills: [] };
@@ -60,11 +91,11 @@ export default function HistoryPage() {
         const totalScans = scans.length;
         const totalScore = scans.reduce((sum, scan) => sum + (scan.matchScore || 0), 0);
         const averageScore = Math.round(totalScore / totalScans);
+
         const frequencyMap: Record<string, number> = {};
         
         scans.forEach((scan) => {
             const missing = safelyParseJsonArray(scan.keywordsMissing);
-            
             missing.forEach((skill) => {
                 const normalizedSkill = skill.trim();
                 if (normalizedSkill) {
@@ -102,7 +133,7 @@ export default function HistoryPage() {
                 </p>
             </div>
 
-            {/* Global Metrics Row */}
+            {/* Global Metrics Dashboard Deck */}
             {history.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4 flex items-center gap-4">
@@ -177,7 +208,7 @@ export default function HistoryPage() {
                                 }`}
                                 onClick={() => !isExpanded && toggleScanExpand(scan.id)}
                             >
-                                {/* CARD HEADER (Position, Company, Match %, Date) */}
+                                {/* CARD HEADER */}
                                 <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 tracking-tight ${
                                     isExpanded ? 'border-b border-slate-900 pb-4' : ''
                                 }`}>
@@ -205,18 +236,30 @@ export default function HistoryPage() {
                                             <span>{new Date(scan.createdAt).toLocaleDateString()}</span>
                                         </div>
                                         
-                                        {/* Dropdown chevron utility button */}
-                                        <button 
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.stopPropagation(); // Prevents layout target double-triggering
-                                                toggleScanExpand(scan.id);
-                                            }}
-                                            className="p-1 rounded-md hover:bg-slate-900 text-slate-400 transition-colors"
-                                            aria-label="Toggle details"
-                                        >
-                                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                        </button>
+                                        {/* Action controls row */}
+                                        <div className="flex items-center gap-1">
+                                            {/* NEW: Inline Trash Button */}
+                                            <button
+                                                type="button"
+                                                onClick={(e) => handleDeleteScan(scan.id, e)}
+                                                className="p-1.5 rounded-md hover:bg-rose-950/30 text-slate-500 hover:text-rose-400 border border-transparent hover:border-rose-900/40 transition-colors"
+                                                title="Delete Scan Log"
+                                            >
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                            </button>
+
+                                            <button 
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation(); 
+                                                    toggleScanExpand(scan.id);
+                                                }}
+                                                className="p-1.5 rounded-md hover:bg-slate-900 text-slate-400 transition-colors"
+                                                aria-label="Toggle details"
+                                            >
+                                                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 

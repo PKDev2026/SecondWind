@@ -12,6 +12,10 @@ import com.example.second_wind.service.CopilotScanService;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -102,13 +106,20 @@ public class CopilotController {
     }
 
     @GetMapping("/history")
-    public ResponseEntity<List<CopilotScan>> getUserCopilotHistory(Authentication auth) {
+    public ResponseEntity<?> getUserCopilotHistory(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Authentication auth) {
+
         if (auth == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        List<CopilotScan> scansHistory = copilotScanService.getHistoryForUser(auth.getName());
-        return ResponseEntity.ok(scansHistory);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        Page<CopilotScan> scansPage = copilotScanService.getHistoryForUserPaginated(auth.getName(), pageable);
+
+        return ResponseEntity.ok(scansPage);
     }
 
     @PostMapping(value = "/resume/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

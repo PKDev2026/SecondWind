@@ -7,6 +7,8 @@ import com.example.second_wind.repository.CopilotScanRepository;
 import com.example.second_wind.repository.UserRepository; // Assuming you have a UserRepository
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,11 +49,11 @@ public class CopilotScanService {
         return copilotScanRepository.save(scan);
     }
 
-    @Transactional(readOnly = true)
-    public List<CopilotScan> getHistoryForUser(String email) {
+    public Page<CopilotScan> getHistoryForUserPaginated(String email, Pageable pageable) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
 
-        return copilotScanRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+        // Spring Data JpaRepository automatically handles passing Pageable to generate SQL LIMIT/OFFSET clauses
+        return copilotScanRepository.findByUserId(user.getId(), pageable);
     }
 }

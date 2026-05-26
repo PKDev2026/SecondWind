@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/utils/api';
 import { JobApplication, ApplicationStatus } from '@/types';
-import { Briefcase, Plus, Link2, Calendar } from 'lucide-react';
+import { Briefcase, Plus, Link2, Calendar, Trash2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
@@ -15,18 +15,15 @@ export default function JobTracker() {
   const [companyDomain, setCompanyDomain] = useState('');
   const [jobUrl, setJobUrl] = useState('');
   const [salaryRange, setSalaryRange] = useState('');
-  const [status, setStatus] = useState<ApplicationStatus>('APPLIED');
   const [currentStage, setCurrentStage] = useState('Applied');
 
   const { user, loading: authLoading } = useAuth();
-
   const router = useRouter();
 
   useEffect(() => {
     if (!authLoading && !user) router.push('/login');
   }, [user, authLoading, router]);
 
-  // Fetch applications on load
   const fetchApps = () => {
     api.getApplications()
       .then((data) => {
@@ -41,47 +38,84 @@ export default function JobTracker() {
     fetchApps();
   }, [user]);
 
-
   if (authLoading || !user) return null;
 
-  // Handle Form Submission
+  // Maps the display stage directly to your 4 strict backend ApplicationStatus enums
+  const mapStageToStatus = (stage: string): ApplicationStatus => {
+    switch (stage) {
+      case 'Interview': return 'INTERVIEW';
+      case 'Ghosted': return 'GHOSTED';
+      case 'Rejected': return 'REJECTED';
+      default: return 'APPLIED';
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!jobTitle || !companyName) return alert('Job Title and Company Name are required!');
+
+    const derivedStatus = mapStageToStatus(currentStage);
 
     const newJobPayload = {
       jobTitle,
       jobUrl,
       salaryRange,
-      status,
+      status: derivedStatus,
       currentStage,
-      appliedAt: new Date().toISOString().split('T')[0] // Formats to YYYY-MM-DD
+      appliedAt: new Date().toISOString().split('T')[0]
     };
 
     try {
       await api.createApplication(newJobPayload, companyName, companyDomain);
-      // Reset form fields
       setJobTitle('');
       setCompanyName('');
       setCompanyDomain('');
       setJobUrl('');
       setSalaryRange('');
-      setStatus('APPLIED');
       setCurrentStage('Applied');
-      // Refresh list
       fetchApps();
     } catch (err) {
       console.error('Failed to save application:', err);
     }
   };
 
-  // Quick Status Badge Color Resolver
-  const getBadgeColor = (status: ApplicationStatus) => {
-    switch (status) {
-      case 'APPLIED': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-      case 'INTERVIEW': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-      case 'GHOSTED': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-      case 'REJECTED': return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+  const handleStageChange = async (id: number, newStage: string) => {
+    const inferredStatus = mapStageToStatus(newStage);
+
+    try {
+      // Optimistic local UI switch
+      setApplications(prev => 
+        prev.map(app => app.id === id ? { ...app, currentStage: newStage, status: inferredStatus } : app)
+      );
+
+      // Fire off synchronization parameters to backend endpoint
+      await api.updateStatus(id, inferredStatus, newStage);
+    } catch (err) {
+      console.error('Failed to update stage choice:', err);
+      fetchApps();
+    }
+  };
+
+  const handleDeleteApp = async (id: number) => {
+    if (!confirm('Are you sure you want to completely erase this application from your tracking matrix?')) return;
+
+    try {
+      setApplications(prev => prev.filter(app => app.id !== id));
+      await api.deleteApplication(id);
+    } catch (err) {
+      console.error('Failed to clear application log:', err);
+      alert('Error processing delete instruction.');
+      fetchApps();
+    }
+  };
+
+  const getStageColorStyle = (stage: string) => {
+    switch (stage) {
+      case 'Applied': return 'bg-blue-950/40 text-blue-400 border-blue-900 focus:border-blue-700';
+      case 'Interview': return 'bg-emerald-950/40 text-emerald-400 border-emerald-900 focus:border-emerald-700';
+      case 'Ghosted': return 'bg-amber-950/40 text-amber-400 border-amber-900 focus:border-amber-700';
+      case 'Rejected': return 'bg-slate-900/60 text-slate-400 border-slate-800 focus:border-slate-700';
+      default: return 'bg-slate-900 border-slate-800 text-white';
     }
   };
 
@@ -144,16 +178,17 @@ export default function JobTracker() {
             />
           </div>
 
+          {/* STRICT DROPDOWN SELECTION STAGE INPUT */}
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">Pipeline Status</label>
+            <label className="block text-xs font-medium text-slate-400 mb-1">Current Tracking Stage</label>
             <select 
-              value={status} onChange={e => setStatus(e.target.value as ApplicationStatus)}
+              value={currentStage} onChange={e => setCurrentStage(e.target.value)}
               className="w-full rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-white focus:border-teal-500 focus:outline-none"
             >
-              <option value="APPLIED">Applied</option>
-              <option value="INTERVIEW">Interview</option>
-              <option value="GHOSTED">Ghosted</option>
-              <option value="REJECTED">Rejected</option>
+              <option value="Applied">Applied</option>
+              <option value="Interview">Interview</option>
+              <option value="Ghosted">Ghosted</option>
+              <option value="Rejected">Rejected</option>
             </select>
           </div>
         </div>
@@ -189,45 +224,65 @@ export default function JobTracker() {
                   <th className="px-6 py-4">Company</th>
                   <th className="px-6 py-4">Role Title</th>
                   <th className="px-6 py-4">Salary Band</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4">Current Stage</th>
+                  <th className="px-6 py-4">Tracking Stage</th>
                   <th className="px-6 py-4">Applied Date</th>
-                  <th className="px-6 py-4 text-right">Links</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
                 {applications.map((app) => (
-                  <tr key={app.id} className="hover:bg-slate-900/30 transition-colors">
+                  <tr key={app.id} className="hover:bg-slate-900/30 transition-colors group">
                     <td className="px-6 py-4 font-semibold text-white">
                       {app.company?.name || 'Unknown'}
                     </td>
                     <td className="px-6 py-4 font-medium text-slate-200">{app.jobTitle}</td>
                     <td className="px-6 py-4 text-slate-400">{app.salaryRange || '—'}</td>
+                    
+                    {/* Dropdown Row Utility */}
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getBadgeColor(app.status)}`}>
-                        {app.status}
-                      </span>
+                      <select
+                        value={app.currentStage || 'Applied'}
+                        onChange={(e) => handleStageChange(app.id, e.target.value)}
+                        className={`text-xs font-bold px-3 py-1 rounded-full border bg-transparent cursor-pointer focus:outline-none focus:ring-1 focus:ring-slate-700 transition-all ${getStageColorStyle(app.currentStage || 'Applied')}`}
+                      >
+                        <option value="Applied" className="bg-slate-950 text-blue-400">Applied</option>
+                        <option value="Interview" className="bg-slate-950 text-emerald-400">Interview</option>
+                        <option value="Ghosted" className="bg-slate-950 text-amber-400">Ghosted</option>
+                        <option value="Rejected" className="bg-slate-950 text-slate-400">Rejected</option>
+                      </select>
                     </td>
+
                     <td className="px-6 py-4 text-slate-400">
-                      <span className="text-slate-300 bg-slate-900 px-2 py-1 rounded text-xs border border-slate-800">
-                        {app.currentStage || 'Applied'}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5 text-slate-600" />
+                        <span>{app.appliedAt}</span>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-slate-400 flex items-center gap-1.5 mt-1.5">
-                      <Calendar className="h-3.5 w-3.5 text-slate-600" />
-                      {app.appliedAt}
-                    </td>
+
+                    {/* Row Actions Column */}
                     <td className="px-6 py-4 text-right">
-                      {app.jobUrl ? (
-                        <a 
-                          href={app.jobUrl} target="_blank" rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-teal-400 hover:text-teal-300 bg-slate-900 hover:bg-slate-800 px-2 py-1 rounded border border-slate-800 transition-colors"
+                      <div className="flex items-center justify-end gap-2">
+                        {app.jobUrl ? (
+                          <a 
+                            href={app.jobUrl} target="_blank" rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-teal-400 hover:text-teal-300 bg-slate-900 hover:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-800 transition-colors"
+                            title="Open original posting link"
+                          >
+                            <Link2 className="h-3.5 w-3.5" />
+                          </a>
+                        ) : (
+                          <span className="text-xs text-slate-600 italic mr-2">No Link</span>
+                        )}
+                        
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteApp(app.id)}
+                          className="p-1.5 rounded-lg bg-slate-900 text-slate-500 hover:text-rose-400 border border-slate-800 hover:border-rose-950/50 transition-colors"
+                          title="Erase Application Record"
                         >
-                          <Link2 className="h-3.5 w-3.5" /> Post Link
-                        </a>
-                      ) : (
-                        <span className="text-xs text-slate-600 italic">No Link</span>
-                      )}
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

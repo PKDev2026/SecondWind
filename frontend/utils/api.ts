@@ -40,6 +40,15 @@ export const api = {
     return res.json();
   },
 
+  // Delete an application record
+  deleteApplication: async (id: number): Promise<void> => {
+    const res = await fetch(`${BASE_URL}/applications/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Failed to purge application record');
+  },
+
   // Fetch the tracking timeline audit trail for a specific job
   getTimeline: async (jobId: number) => {
     const res = await fetch(`${BASE_URL}/timeline/application/${jobId}`, {

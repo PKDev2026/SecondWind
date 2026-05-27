@@ -30,7 +30,7 @@ export const api = {
 
   // Update the password for the user account
   updatePassword: async (payload: Record<string, string>): Promise<void> => {
-    const response = await fetch('/api/auth/password', {
+    const response = await fetch(`${BASE_URL}/auth/password`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

@@ -52,7 +52,10 @@ export default function Copilot() {
       });
 
       if (!response.ok) throw new Error(`Failed to archive scan payload: ${response.status}`);
+      
       setSaveSuccess(true);
+      setJobTitle('');
+      setCompanyName('');
     } catch (error) {
       console.error("Error saving standalone report to history:", error);
     } finally {
@@ -66,7 +69,7 @@ export default function Copilot() {
 
     setAnalyzing(true);
     setResults(null);
-    setSaveSuccess(false);
+    setSaveSuccess(false); // Reset lock state for fresh scans
     
     try {
       const response = await fetch('http://localhost:8080/api/copilot/analyze', {
@@ -232,7 +235,8 @@ export default function Copilot() {
                       placeholder="e.g. Full Stack Engineer"
                       value={jobTitle} 
                       onChange={(e) => setJobTitle(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500"
+                      disabled={saveSuccess} // Optional: visual block to enforce single entries
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500 disabled:opacity-40 disabled:cursor-not-allowed"
                     />
                   </div>
 
@@ -243,7 +247,8 @@ export default function Copilot() {
                       placeholder="e.g. Frost Bank"
                       value={companyName} 
                       onChange={(e) => setCompanyName(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500"
+                      disabled={saveSuccess} // Optional: visual block to enforce single entries
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-teal-500 disabled:opacity-40 disabled:cursor-not-allowed"
                     />
                   </div>
                 </div>
@@ -256,10 +261,11 @@ export default function Copilot() {
                   <button
                     type="button"
                     onClick={handleSaveStandaloneScan}
-                    disabled={isSaving}
-                    className="bg-teal-500 hover:bg-teal-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-semibold px-5 py-2 rounded-lg text-sm transition-all ml-auto"
+                    // FIXED: Re-enforces protection state so users can't spam consecutive commits
+                    disabled={isSaving || saveSuccess}
+                    className="bg-teal-500 hover:bg-teal-400 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-semibold px-5 py-2 rounded-lg text-sm transition-all ml-auto disabled:cursor-not-allowed"
                   >
-                    {isSaving ? "Archiving..." : "Archive Scan Report"}
+                    {isSaving ? "Archiving..." : saveSuccess ? "Report Archived" : "Archive Scan Report"}
                   </button>
                 </div>
               </div>

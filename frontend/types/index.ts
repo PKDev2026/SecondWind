@@ -66,13 +66,6 @@ export interface CopilotScan {
     createdAt: string;
 }
 
-export interface AnalysisResult {
-  matchScore: number;
-  keywordsMatched: string[];
-  keywordsMissing: string[];
-  recommendations: string[];
-}
-
 export interface ResumeUploadZoneProps {
   onResumeLoaded: (extractedText: string) => void;
 }

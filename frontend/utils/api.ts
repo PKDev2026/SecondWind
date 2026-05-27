@@ -28,6 +28,22 @@ export const api = {
     return res.json();
   },
 
+  // Update the password for the user account
+  updatePassword: async (payload: Record<string, string>): Promise<void> => {
+    const response = await fetch('/api/auth/password', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to update system access credentials.');
+    }
+  },
+
   // Update application status and stage
   updateStatus: async (id: number, status: string, currentStage: string) => {
     const res = await fetch(

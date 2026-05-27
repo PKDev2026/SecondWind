@@ -1,4 +1,5 @@
 export type ApplicationStatus = 'APPLIED' | 'INTERVIEW' | 'REJECTED' | 'GHOSTED';
+export type TrackingStage = 'Applied' | 'Interview' | 'Ghosted' | 'Rejected';
 
 export interface Company {
   id: number;
@@ -14,7 +15,7 @@ export interface JobApplication {
   jobUrl?: string;
   salaryRange?: string;
   status: ApplicationStatus;
-  currentStage: string;
+  currentStage: TrackingStage;
   notes?: string;
   appliedAt: string; // ISO Date String (YYYY-MM-DD)
   createdAt: string;
@@ -37,13 +38,6 @@ export interface ResumeVersion {
   createdAt: string;
 }
 
-export interface AnalysisResult {
-  matchScore: number;
-  keywordsMatched: string[];
-  keywordsMissing: string[];
-  recommendations: string[];
-}
-
 export interface User {
   email: string;
   firstName: string | null;
@@ -64,6 +58,13 @@ export interface CopilotScan {
     keywordsMissing: string;
     recommendations: string;
     createdAt: string;
+}
+
+export interface AnalysisResult {
+  matchScore: number;
+  keywordsMatched: string[];
+  keywordsMissing: string[];
+  recommendations: string[];
 }
 
 export interface ResumeUploadZoneProps {

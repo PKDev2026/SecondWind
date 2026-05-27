@@ -32,10 +32,8 @@ export const api = {
   updatePassword: async (payload: Record<string, string>): Promise<void> => {
     const response = await fetch(`${BASE_URL}/auth/password`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        credentials: 'include'
-      },
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(payload),
     });
 

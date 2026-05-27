@@ -55,10 +55,10 @@ export default function AppLayoutShell({ children }: { children: React.ReactNode
               <Briefcase className="h-5 w-5" /> Job Tracker
             </Link>
             <Link href="/copilot" className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium text-sm ${pathname === "/copilot" ? "text-teal-400 bg-slate-900" : "text-slate-400 hover:text-teal-400 hover:bg-slate-900/50"}`}>
-              <FileText className="h-5 w-5" /> AI Resume Copilot
+              <FileText className="h-5 w-5" /> AI Copilot
             </Link>
             <Link href="/history" className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium text-sm ${pathname === "/history" ? "text-teal-400 bg-slate-900" : "text-slate-400 hover:text-teal-400 hover:bg-slate-900/50"}`}>
-              <FileText className="h-5 w-5" /> Saved Optimizations
+              <FileText className="h-5 w-5" /> History
             </Link>
           </nav>
         </div>

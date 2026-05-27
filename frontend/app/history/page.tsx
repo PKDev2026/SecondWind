@@ -137,7 +137,7 @@ export default function HistoryPage() {
         <div className="space-y-6">
             <div>
                 <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-                    <BarChart3 className="h-6 w-6 text-teal-400" /> Saved Optimizations
+                    <BarChart3 className="h-6 w-6 text-teal-400" />History
                 </h1>
                 <p className="text-sm text-slate-400">
                     Review standalone alignment diagnostics, structural keywords, and missing entities logged for your profile.

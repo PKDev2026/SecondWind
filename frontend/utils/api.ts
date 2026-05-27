@@ -34,6 +34,7 @@ export const api = {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        credentials: 'include'
       },
       body: JSON.stringify(payload),
     });

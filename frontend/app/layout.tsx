@@ -20,7 +20,6 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} bg-slate-900 text-slate-100 antialiased`}>
         <AuthProvider>
-          {/* Move the sidebar layout logic to a shell that can see the current route */}
           <AppLayoutShell>{children}</AppLayoutShell>
         </AuthProvider>
       </body>

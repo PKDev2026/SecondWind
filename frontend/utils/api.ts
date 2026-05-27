@@ -30,15 +30,14 @@ export const api = {
 
   // Update the password for the user account
   updatePassword: async (payload: Record<string, string>): Promise<void> => {
-    const response = await fetch(`${BASE_URL}/auth/password`, {
+    const res = await fetch(`${BASE_URL}/auth/password`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify(payload),
     });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
       throw new Error(errorData.message || 'Failed to update system access credentials.');
     }
   },
@@ -46,7 +45,7 @@ export const api = {
   // Update application status and stage
   updateStatus: async (id: number, status: string, currentStage: string) => {
     const res = await fetch(
-      `${BASE_URL}/applications/${id}/status?status=${status}&currentStage=${encodeURIComponent(currentStage)}`, { 
+      `${BASE_URL}/applications/${id}/status?status=${status}&currentStage=${encodeURIComponent(currentStage)}`, {
         method: 'PUT',
         credentials: 'include',
       }
@@ -75,7 +74,7 @@ export const api = {
 
   // Auth
   register: async (email: string, password: string, firstName: string, lastName: string): Promise<string> => {
-    const res = await fetch(`http://localhost:8080/api/auth/register`, {
+    const res = await fetch(`${BASE_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -86,7 +85,7 @@ export const api = {
   },
 
   login: async (email: string, password: string): Promise<User> => {
-    const res = await fetch(`http://localhost:8080/api/auth/login`, {
+    const res = await fetch(`${BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -97,15 +96,16 @@ export const api = {
   },
 
   logout: async (): Promise<void> => {
-    await fetch(`http://localhost:8080/api/auth/logout`, {
+    const res = await fetch(`${BASE_URL}/auth/logout`, {
       method: 'POST',
       credentials: 'include',
     });
+    if (!res.ok) throw new Error('Failed to logout');
   },
 
   me: async (): Promise<User | null> => {
     try {
-      const res = await fetch(`http://localhost:8080/api/auth/me`, {
+      const res = await fetch(`${BASE_URL}/auth/me`, {
         credentials: 'include',
       });
       if (!res.ok) return null;
@@ -119,63 +119,54 @@ export const api = {
     const res = await fetch(`${BASE_URL}/resumes/user-history`, {
       credentials: 'include',
     });
-    
     if (!res.ok) {
-      // Log the exact status code (e.g., 401, 403, 404, 500) and text
       const errorText = await res.text().catch(() => "No error body text available");
       console.error(`Backend Response Failed! HTTP Status: ${res.status}`);
       console.error(`Backend Error Body:`, errorText);
-      
       throw new Error(`Failed to fetch optimization history. Status: ${res.status}`);
     }
-    
     return res.json();
   },
 
   saveResumeVersion: async (
-    jobId: number, 
-    versionName: string, 
-    tailoredBullets: string, 
+    jobId: number,
+    versionName: string,
+    tailoredBullets: string,
     skillsAligned: string
   ): Promise<ResumeVersion> => {
-    const url = `${BASE_URL}/resumes/application/${jobId}?versionName=${encodeURIComponent(versionName)}`;
-    
-    const res = await fetch(url, {
+    const res = await fetch(`${BASE_URL}/resumes/application/${jobId}?versionName=${encodeURIComponent(versionName)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify({ tailoredBullets, skillsAligned }),
     });
-
     if (!res.ok) throw new Error('Failed to save tailored resume version');
     return res.json();
   },
 
   // Send the binary PDF data up to the backend
   uploadResumeFile: async (file: File) => {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("http://localhost:8080/api/copilot/resume/upload", {
-          method: "POST",
-          body: formData, // Do NOT set Content-Type headers manually here; FormData does it automatically
-          credentials: "include"
-      });
-      
-      if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(errorText || "Upload failed");
-      }
-      return res.json();
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch(`${BASE_URL}/copilot/resume/upload`, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(errorText || "Upload failed");
+    }
+    return res.json();
   },
 
   // Pull down the clean parsed text and filename metadata
   fetchSavedResumeData: async () => {
-      const res = await fetch("http://localhost:8080/api/copilot/resume/data", {
-          method: "GET",
-          credentials: "include"
-      });
-      if (!res.ok) throw new Error("Failed to load profile sync data");
-      return res.json(); // Returns { fileName: "...", extractedText: "..." }
+    const res = await fetch(`${BASE_URL}/copilot/resume/data`, {
+      method: "GET",
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error("Failed to load profile sync data");
+    return res.json();
   },
 };

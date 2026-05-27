@@ -3,6 +3,7 @@ package com.example.second_wind.controller;
 import com.example.second_wind.model.User;
 import com.example.second_wind.model.dto.AuthRequest;
 import com.example.second_wind.model.dto.AuthResponse;
+import com.example.second_wind.model.dto.PasswordUpdateRequest;
 import com.example.second_wind.repository.UserRepository;
 import com.example.second_wind.security.JwtUtil;
 import jakarta.servlet.http.Cookie;
@@ -14,6 +15,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -65,6 +67,31 @@ public class AuthController {
         cookie.setMaxAge(0);
         response.addCookie(cookie);
         return ResponseEntity.ok("Logged out.");
+    }
+
+    @PutMapping("/password")
+    public ResponseEntity<?> updatePassword(@RequestBody PasswordUpdateRequest req, Authentication auth) {
+        // 1. Ensure the session or JWT context is active
+        if (auth == null || !auth.isAuthenticated()) {
+            return ResponseEntity.status(401).body(Map.of("message", "Unauthorized session context."));
+        }
+
+        // 2. Fetch the user context from the DB
+        User user = userRepository.findByEmail(auth.getName())
+                .orElseThrow(() -> new RuntimeException("User account not found."));
+
+        // 3. Match current raw password entry against the stored database hash
+        if (!passwordEncoder.matches(req.getCurrentPassword(), user.getPasswordHash())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "The current password you entered is incorrect."));
+        }
+
+        // 4. Encode the new credential and update the model
+        user.setPasswordHash(passwordEncoder.encode(req.getNewPassword()));
+
+        // 5. Commit change to PostgreSQL (the @PreUpdate hook will automatically refresh the updatedAt timestamp)
+        userRepository.save(user);
+
+        return ResponseEntity.ok(Map.of("message", "Password updated successfully."));
     }
 
     @GetMapping("/me")

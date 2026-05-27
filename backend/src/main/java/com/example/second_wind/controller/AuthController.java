@@ -5,7 +5,6 @@ import com.example.second_wind.model.dto.AuthRequest;
 import com.example.second_wind.model.dto.AuthResponse;
 import com.example.second_wind.repository.UserRepository;
 import com.example.second_wind.security.JwtUtil;
-import com.example.second_wind.security.UserDetailsServiceImpl;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +21,6 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthenticationManager authManager;
-    private final UserDetailsServiceImpl userDetailsService;
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
